@@ -1,1 +1,183 @@
-Just made this so i could deploy to pages without code
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Overclock">
+<meta name="theme-color" content="#0a0018">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>Overclock</title>
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">
+{ "imports": { "three": "./lib/three.module.js", "three/addons/": "./lib/addons/" } }
+</script>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<!-- HUD -->
+<div id="hud" class="hidden">
+  <div class="hud-top">
+    <div class="hud-left">
+      <div class="hud-label">SCORE</div>
+      <div id="hudScore" class="hud-num">0</div>
+      <div id="hudDist" class="hud-sub">0 m</div>
+    </div>
+    <div class="hud-center">
+      <div id="hudClock" class="clock">30.0</div>
+      <div id="clockGain" class="clock-gain"></div>
+    </div>
+    <div class="hud-right">
+      <div class="hud-label">MULTIPLIER</div>
+      <div id="hudMult" class="hud-num mult">x1</div>
+      <div class="combo-bar"><div id="hudCombo"></div></div>
+    </div>
+  </div>
+  <div class="hud-bottom">
+    <div class="hud-abilities">
+      <div class="ability"><div class="key">SHIFT</div><div class="ability-name">DASH</div><div class="cd"><div id="hudDash"></div></div></div>
+      <div class="ability"><div class="key">SPACE</div><div class="ability-name">JUMP</div></div>
+      <div id="hudShield" class="ability hidden"><div class="key">🛡</div><div id="hudShieldN" class="ability-name">x1</div></div>
+    </div>
+    <div id="hudUpgrades" class="hud-upgrades"></div>
+  </div>
+  <div id="ghostNote" class="ghost-note"></div>
+</div>
+
+<div id="toasts"></div>
+<div id="popups"></div>
+
+<!-- MENU -->
+<div id="menu" class="screen hidden">
+  <div class="menu-wrap">
+    <div class="menu-main">
+      <h1 class="logo">OVER<span>CLOCK</span></h1>
+      <div class="tagline">Beat the clock. Steal time from danger.</div>
+      <div class="level-box">
+        <div class="level-row"><span id="menuLevel">LEVEL 1</span><span id="menuXp">0 / 100 XP</span></div>
+        <div class="xp-bar"><div id="menuXpFill"></div></div>
+        <div id="menuNextUnlock" class="next-unlock"></div>
+      </div>
+      <button id="btnPlay" class="btn btn-big">PLAY <kbd>ENTER</kbd></button>
+      <button id="btnDaily" class="btn">DAILY TRACK <kbd>D</kbd><span id="dailyBadge" class="badge hidden">NEW</span></button>
+      <div id="firstRunNote" class="note hidden">⚡ First run today: <b>DOUBLE XP</b></div>
+      <div class="best-line">Best: <span id="menuBest">0</span> · <span id="menuBestDist">0 m</span></div>
+
+      <div class="garage">
+        <div class="garage-item"><div class="g-label">SHIP <kbd>S</kbd></div><button id="gShip" class="g-btn"></button></div>
+        <div class="garage-item"><div class="g-label">WORLD <kbd>W</kbd></div><button id="gWorld" class="g-btn"></button></div>
+        <div class="garage-item"><div class="g-label">TRAIL <kbd>T</kbd></div><button id="gTrail" class="g-btn"></button></div>
+      </div>
+      <div class="controls-hint">← → / A D steer · SPACE jump · SHIFT dash · P pause · M mute</div>
+    </div>
+
+    <div class="menu-side">
+      <div class="panel">
+        <div class="panel-title">DAILY REWARDS</div>
+        <div id="calendar" class="calendar"></div>
+        <button id="btnClaim" class="btn btn-small">CLAIM <kbd>C</kbd></button>
+      </div>
+      <div class="panel">
+        <div class="panel-title">TODAY'S MISSIONS <span id="missionsBonus" class="panel-sub"></span></div>
+        <div id="missions"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">WEEKLY <span class="panel-sub">play any 5 days</span></div>
+        <div id="weekly" class="weekly"></div>
+      </div>
+      <div class="panel panel-crate">
+        <div class="panel-title">BONUS CRATE</div>
+        <div class="crate-row">
+          <div id="crateText" class="crate-text"></div>
+          <button id="btnCrate" class="btn btn-small btn-ad">▶ WATCH AD <kbd>B</kbd></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- UPGRADE PICK -->
+<div id="upgrade" class="screen dim hidden">
+  <div class="screen-title">CHOOSE AN UPGRADE</div>
+  <div id="upgradeCards" class="cards"></div>
+  <div class="upgrade-actions">
+    <button id="btnReroll" class="btn btn-small btn-ad">▶ WATCH AD: REROLL <kbd>Q</kbd></button>
+  </div>
+  <div class="hint">Press <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> or use ← → and ENTER</div>
+</div>
+
+<!-- CONTINUE -->
+<div id="continue" class="screen dim hidden">
+  <div class="screen-title red">OUT OF TIME</div>
+  <div class="continue-box">
+    <div class="continue-text">Keep this run going?</div>
+    <button id="btnContinue" class="btn btn-big btn-ad">▶ WATCH AD: +10 SECONDS <kbd>C</kbd></button>
+    <button id="btnNoContinue" class="btn btn-small">NO THANKS <kbd>SPACE</kbd></button>
+    <div class="continue-timer"><div id="continueFill"></div></div>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div id="results" class="screen dim hidden">
+  <div id="resTitle" class="screen-title">RUN COMPLETE</div>
+  <div class="results-wrap">
+    <div class="res-stats">
+      <div class="res-big"><div class="hud-label">SCORE</div><div id="resScore" class="res-num">0</div></div>
+      <div id="resBest" class="res-best"></div>
+      <div class="res-grid">
+        <div><span>Distance</span><b id="resDist">0 m</b></div>
+        <div><span>Near-misses</span><b id="resNear">0</b></div>
+        <div><span>Crystals</span><b id="resCrystals">0</b></div>
+        <div><span>Top multiplier</span><b id="resMult">x1</b></div>
+      </div>
+    </div>
+    <div class="res-xp">
+      <div class="hud-label">XP EARNED</div>
+      <div id="resXpList" class="xp-list"></div>
+      <div id="resXpTotal" class="xp-total">+0 XP</div>
+      <button id="btnDouble" class="btn btn-small btn-ad">▶ WATCH AD: DOUBLE XP <kbd>X</kbd></button>
+      <div class="level-box small">
+        <div class="level-row"><span id="resLevel">LEVEL 1</span><span id="resXpTxt"></span></div>
+        <div class="xp-bar"><div id="resXpFill"></div></div>
+      </div>
+      <div id="resUnlocks"></div>
+    </div>
+  </div>
+  <div class="results-actions">
+    <button id="btnAgain" class="btn btn-big">PLAY AGAIN <kbd>SPACE</kbd></button>
+    <button id="btnMenu" class="btn btn-small">MENU <kbd>ESC</kbd></button>
+  </div>
+</div>
+
+<!-- PAUSE -->
+<div id="pause" class="screen dim hidden">
+  <div class="screen-title">PAUSED</div>
+  <button id="btnResume" class="btn btn-big">RESUME <kbd>P</kbd></button>
+  <button id="btnQuit" class="btn btn-small">QUIT TO MENU <kbd>Q</kbd></button>
+</div>
+
+<!-- AD PLACEHOLDER -->
+<div id="adOverlay" class="screen ad-overlay hidden">
+  <div class="ad-box">
+    <div class="ad-label">AD</div>
+    <div class="ad-text">Ad placeholder: a real rewarded ad plays here once AdSense is approved.</div>
+    <div id="adCount" class="ad-count">3</div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div id="loading" class="screen">
+  <h1 class="logo">OVER<span>CLOCK</span></h1>
+  <div id="loadText" class="tagline">Loading…</div>
+</div>
+
+<button id="muteBtn" class="mute-btn" aria-label="Mute">🔊</button>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
